@@ -1,0 +1,13 @@
+#main {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 640px;
+    height: 620px;
+    margin-left: -320px;
+    margin-top: -310px;
+}
+
+.fancybox-inner {
+    overflow: hidden !important;
+}

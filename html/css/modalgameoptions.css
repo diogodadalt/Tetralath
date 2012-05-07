@@ -1,0 +1,15 @@
+ul {
+   list-style: none;
+}
+
+li {
+    min-height: 40px;
+}
+
+h1 {
+    margin-left: 40px;
+}
+
+#btnStartGame {
+    margin-top: 420px;
+}
