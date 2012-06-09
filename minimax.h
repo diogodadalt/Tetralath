@@ -99,8 +99,11 @@ private:
     int minMove(char _board[AMOUNT_POSITIONS], player _player);
     int maxMove(char _board[AMOUNT_POSITIONS], player _player);
     void resetBoard();
+    void initNeighbors();
     void changeState(GAME_STATE newState);
     void storePlayerMove(int move, int player);
+    int evaluate(char _board[AMOUNT_POSITIONS], bool isComputerTurn);
+    char** germov(char _board[AMOUNT_POSITIONS], bool isComputerTurn); // Method that returns the valid moves of a move
 
 
     //! [ private members ]
@@ -108,6 +111,8 @@ private:
     GAME_STATE gameState;
     player humanPlayer, computerPlayer, currentPlayer;
     char board[AMOUNT_POSITIONS];
+    QList<QList<QList<int> > > neighbors;
+    bool computerStarted;
     //! [ private members ]
 };
 
