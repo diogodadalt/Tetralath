@@ -95,15 +95,21 @@ signals:
 private slots:
 
 private:
-    int miniMax(char _board[AMOUNT_POSITIONS], player _player);
+    int miniMax(char _board[AMOUNT_POSITIONS], bool isComputerTurn);
     int minMove(char _board[AMOUNT_POSITIONS], player _player);
     int maxMove(char _board[AMOUNT_POSITIONS], player _player);
     void resetBoard();
+    void resetBoard(char _board[AMOUNT_POSITIONS]);
     void initNeighbors();
     void changeState(GAME_STATE newState);
     void storePlayerMove(int move, int player);
+    char* copyBoardState(char _board[AMOUNT_POSITIONS]);
     int evaluate(char _board[AMOUNT_POSITIONS], bool isComputerTurn);
     char** germov(char _board[AMOUNT_POSITIONS], bool isComputerTurn); // Method that returns the valid moves of a move
+    int amountOfPossibleMoves(char _board[AMOUNT_POSITIONS]);
+    bool deepEnough(char _board[AMOUNT_POSITIONS], int depth);
+    int getBoardPositionOfMove(char previousBoard[AMOUNT_POSITIONS], char currentBoard[AMOUNT_POSITIONS]);
+    int miniMaxShortVersion(char _board[AMOUNT_POSITIONS], int depth, bool isComputerTurn); //(int depth, int alpha, int beta, out Board childWithMax)
 
 
     //! [ private members ]

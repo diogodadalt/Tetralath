@@ -53,6 +53,7 @@ MiniMax::MiniMax(QObject *parent)
     for(int i = 0; i < AMOUNT_POSITIONS; i++) {
         bd[i] = 0;
     }
+    int amountPossibleMoves = 47;
     bd[0] = 'h';
     bd[2] = 'h';
     bd[3] = 'h';
@@ -60,10 +61,25 @@ MiniMax::MiniMax(QObject *parent)
     bd[8] = 'h';
     bd[23] = 'h';
     bd[20] = 'h';
+    bd[1] = 'c';
+    bd[4] = 'c';
+    bd[5] = 'c';
+    bd[9] = 'c';
+    bd[10] = 'c';
+    bd[24] = 'c';
+    bd[21] = 'c';
     computerStarted = false;
     int res = evaluate(bd, false);
+    char** mvslist = germov(bd, false);
     qDebug() << "asdasd";
     qDebug() << res;
+    for (int i = 0; i < amountPossibleMoves; i++) {
+        for (int j = 0; j < AMOUNT_POSITIONS; j++) {
+            qDebug() << i << ", " << j << " ";
+            qDebug() << (mvslist[i][j] == 0);
+            qDebug() << mvslist[i][j];
+        }
+    }
 }
 //! [ ImageAnalyzer - Constructor ]
 
@@ -88,7 +104,8 @@ void MiniMax::changeState(GAME_STATE newState) {
     switch(newState) {
     case COMPUTER_TURN:
         currentPlayer = computerPlayer;
-        position = miniMax(board, computerPlayer);
+        //position = miniMax(board, computerPlayer);
+        position = miniMaxShortVersion(board, 5, true);
         storePlayerMove(position, 2);
         emit computerPlayed(position);
         changeState(HUMAN_TURN);
@@ -109,6 +126,21 @@ void MiniMax::resetBoard() {
     for(int i = 0; i < AMOUNT_POSITIONS; i++) {
         board[i] = 0;
     }
+}
+
+void MiniMax::resetBoard(char _board[AMOUNT_POSITIONS]) {
+    for(int i = 0; i < AMOUNT_POSITIONS; i++) {
+        _board[i] = 0;
+    }
+}
+
+char* MiniMax::copyBoardState(char _board[AMOUNT_POSITIONS]) {
+    char* b;
+    b = new char[AMOUNT_POSITIONS];
+    for (int i = 0; i < AMOUNT_POSITIONS; i++)
+        b[i] = _board[i];
+
+    return b;
 }
 
 void MiniMax::initNeighbors() {
@@ -530,17 +562,76 @@ int MiniMax::evaluate(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
 
 char** MiniMax::germov(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
     char** movesList;
+    movesList = new  char*[amountOfPossibleMoves(_board)];
+    int countMoves = 0;
     if (isComputerTurn) {
         for(int i = 0; i < AMOUNT_POSITIONS; i++) {
             if (_board[i] == 0) {
-
+                movesList[countMoves] = new char[AMOUNT_POSITIONS];
+                movesList[countMoves] = copyBoardState(_board);
+                movesList[countMoves][i] = 'c';
+                countMoves++;
+            }
+        }
+    } else {
+        for(int i = 0; i < AMOUNT_POSITIONS; i++) {
+            if (_board[i] == 0) {
+                movesList[countMoves] = new char[AMOUNT_POSITIONS];
+                movesList[countMoves] = copyBoardState(_board);
+                movesList[countMoves][i] = 'h';
+                countMoves++;
             }
         }
     }
+    return movesList;
+}
+
+int MiniMax::amountOfPossibleMoves(char _board[AMOUNT_POSITIONS]) {
+    int possibleMoves = 0;
+    for (int i = 0; i < AMOUNT_POSITIONS; i++) {
+        if (_board[i] == 0)
+            possibleMoves++;
+    }
+    return possibleMoves;
+}
+
+bool MiniMax::deepEnough(char _board[AMOUNT_POSITIONS], int depth) {
+    int amountOfEmptyPlaceHolders = 0;
+    int amountOfDifferentValues = 0;
+    for (int i = 0; i < AMOUNT_POSITIONS; i++) {
+        if (_board[i] == 0)
+            amountOfEmptyPlaceHolders++;
+        else if (_board[i] != board[i])
+            amountOfDifferentValues++;
+    }
+
+    if (amountOfEmptyPlaceHolders || amountOfDifferentValues == depth)
+        return true;
+    else
+        return false;
+}
+
+int MiniMax::getBoardPositionOfMove(char previousBoard[AMOUNT_POSITIONS], char currentBoard[AMOUNT_POSITIONS]) {
+    int pos = -1;
+    for (int i = 0; i < AMOUNT_POSITIONS; i++) {
+        if (previousBoard[i] != currentBoard[i]) {
+            pos = i;
+            break;
+        }
+    }
+    return pos;
+}
+
+int MiniMax::miniMaxShortVersion(char _board[AMOUNT_POSITIONS], int depth, bool isComputerTurn) {
+    if (deepEnough(_board, depth)) {
+
+    }
+    // TODO
+    return 0;
 }
 
 // returns best move for the current computer player
-int MiniMax::miniMax(char _board[AMOUNT_POSITIONS], player _player) {
+int MiniMax::miniMax(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
     /*
     int best_val = -INFINITY, index = 0;
     std::list<int> move_list;
