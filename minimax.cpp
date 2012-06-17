@@ -44,6 +44,7 @@
 MiniMax::MiniMax(QObject *parent)
     : QObject(parent)
 {
+    connect(this, SIGNAL(somebodyWon(bool)), this, SLOT(onSomebodyWon()));
     initNeighbors();
     resetBoard();
     changeState(START);
@@ -71,6 +72,7 @@ MiniMax::MiniMax(QObject *parent)
     computerStarted = false;
     int res = evaluate(bd, false);
     char** mvslist = germov(bd, false);
+    /*
     qDebug() << "asdasd";
     qDebug() << res;
     for (int i = 0; i < amountPossibleMoves; i++) {
@@ -80,10 +82,15 @@ MiniMax::MiniMax(QObject *parent)
             qDebug() << mvslist[i][j];
         }
     }
+    */
 }
 //! [ ImageAnalyzer - Constructor ]
 
 MiniMax::~MiniMax() {}
+
+void MiniMax::onSomebodyWon() {
+    //disconnect(this, 0, 0, 0);
+}
 
 void MiniMax::gameStarted(bool computerBegins) {
     if (computerBegins)
@@ -96,20 +103,47 @@ void MiniMax::gameStarted(bool computerBegins) {
 
 void MiniMax::humanPlayed(int pos) {
     storePlayerMove(pos, 1);
+
+    int boardState = evaluate(board, false);
+    qDebug() << boardState;
+    if (boardState == 1000) {
+        qDebug() << "Human won";
+        emit somebodyWon(false);
+    }
+    else if (boardState == -1000) {
+        qDebug() << "Human lost";
+        emit somebodyWon(true);
+    }
+
     changeState(COMPUTER_TURN);
 }
 
-void MiniMax::changeState(GAME_STATE newState) {
+void MiniMax::changeState(GAME_STATE newState) {    
+    debugBoard(board);
     int position = -1;
     switch(newState) {
-    case COMPUTER_TURN:
-        currentPlayer = computerPlayer;
-        //position = miniMax(board, computerPlayer);
-        position = miniMaxShortVersion(board, 5, true);
+    case COMPUTER_TURN: {
+        currentPlayer = computerPlayer;        
+        //MinimaxResult& result = miniMaxShortVersion(board, 3, true);
+        //position = getBoardPositionOfMove(board, result.board);
+        position = temporary(board, 3, true);
         storePlayerMove(position, 2);
+
+        int boardState = evaluate(board, true);
+        qDebug() << boardState;
+        if (boardState == 1000) {
+            qDebug() << "Computer won";
+            emit somebodyWon(true);
+        }
+        else if (boardState == -1000) {
+            qDebug() << "Computer lost";
+            emit somebodyWon(false);
+        }
+
         emit computerPlayed(position);
         changeState(HUMAN_TURN);
         break;
+    }
     case HUMAN_TURN:
         currentPlayer = humanPlayer;
         break;
@@ -118,7 +152,26 @@ void MiniMax::changeState(GAME_STATE newState) {
     gameState = newState;
 }
 
+void MiniMax::checkForGameState(char _board[]) {
+
+}
+
+void MiniMax::debugBoard(char _board[]) {
+    qDebug() << " board: ";
+    QString b = "";
+    for (int i = 0; i < AMOUNT_POSITIONS; i++) {
+        if (_board[i] != 0)
+            b.append(_board[i]);
+        else
+            b.append('0');
+        if (i < AMOUNT_POSITIONS - 1)
+            b.append(", ");
+    }
+    qDebug() << b;
+}
+
 void MiniMax::storePlayerMove(int move, int player) {
+    qDebug() << "position played: " << move;
     board[move] = (player == 1) ? 'h' : 'c';
 }
 
@@ -128,7 +181,7 @@ void MiniMax::resetBoard() {
     }
 }
 
-void MiniMax::resetBoard(char _board[AMOUNT_POSITIONS]) {
+void MiniMax::resetBoard(char _board[]) {
     for(int i = 0; i < AMOUNT_POSITIONS; i++) {
         _board[i] = 0;
     }
@@ -466,7 +519,7 @@ void MiniMax::initNeighbors() {
     neighbors[60][2] << 59 << 58 << 57;
 }
 
-int MiniMax::evaluate(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
+int MiniMax::evaluate(char _board[], bool isComputerTurn) {
     int valUnitsH = 0, valUnisC = 0,
         valPairsH = 0, valPairsC = 0,
         valTripletH = 0, valTripletC = 0,
@@ -495,6 +548,7 @@ int MiniMax::evaluate(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
                     numPieces = 1;
                     count = 1;
                     foreach(int n, neighbors[i][j]) {
+                        int lastP = neighbors[i][j].length()-1;
                         if (currentP == _board[n]) {
 
                             if (numPieces == count && numPieces == 1) {
@@ -502,7 +556,13 @@ int MiniMax::evaluate(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
                                     valPairsH++;
                                 else if (currentP == 'c')
                                     valPairsC++;
-                            } else if (numPieces == count && numPieces == 2) {
+                            } else if (numPieces == count && numPieces == 2 && currentP != _board[neighbors[i][j][lastP]]) {
+                                /*qDebug() << "test" << (currentP != _board[neighbors[i][j][lastP]]);
+                                qDebug() << "currentP" << currentP;
+                                qDebug() << "lastP" << neighbors[i][j][lastP];
+                                qDebug() << "neighbors" << neighbors[i][j];
+                                qDebug() << "current index" << n;
+                                qDebug() << "last index" << lastP;*/
                                 // somebody lost the game
                                 somebodyWon = (currentP == 'h') ? 'c' : 'h';
                                 break;
@@ -560,9 +620,9 @@ int MiniMax::evaluate(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
     return val;
 }
 
-char** MiniMax::germov(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
+char** MiniMax::germov(char _board[], bool isComputerTurn) {
     char** movesList;
-    movesList = new  char*[amountOfPossibleMoves(_board)];
+    movesList = new char*[amountOfPossibleMoves(_board)];
     int countMoves = 0;
     if (isComputerTurn) {
         for(int i = 0; i < AMOUNT_POSITIONS; i++) {
@@ -586,7 +646,7 @@ char** MiniMax::germov(char _board[AMOUNT_POSITIONS], bool isComputerTurn) {
     return movesList;
 }
 
-int MiniMax::amountOfPossibleMoves(char _board[AMOUNT_POSITIONS]) {
+int MiniMax::amountOfPossibleMoves(char _board[]) {
     int possibleMoves = 0;
     for (int i = 0; i < AMOUNT_POSITIONS; i++) {
         if (_board[i] == 0)
@@ -595,7 +655,7 @@ int MiniMax::amountOfPossibleMoves(char _board[AMOUNT_POSITIONS]) {
     return possibleMoves;
 }
 
-bool MiniMax::deepEnough(char _board[AMOUNT_POSITIONS], int depth) {
+bool MiniMax::deepEnough(char _board[], int depth) {
     int amountOfEmptyPlaceHolders = 0;
     int amountOfDifferentValues = 0;
     for (int i = 0; i < AMOUNT_POSITIONS; i++) {
@@ -605,14 +665,16 @@ bool MiniMax::deepEnough(char _board[AMOUNT_POSITIONS], int depth) {
             amountOfDifferentValues++;
     }
 
-    if (amountOfEmptyPlaceHolders || amountOfDifferentValues == depth)
+    if (amountOfEmptyPlaceHolders == 0 || depth == 0)
         return true;
     else
         return false;
 }
 
-int MiniMax::getBoardPositionOfMove(char previousBoard[AMOUNT_POSITIONS], char currentBoard[AMOUNT_POSITIONS]) {
+int MiniMax::getBoardPositionOfMove(char previousBoard[], char currentBoard[]) {
     int pos = -1;
+    debugBoard(previousBoard);
+    debugBoard(currentBoard);
     for (int i = 0; i < AMOUNT_POSITIONS; i++) {
         if (previousBoard[i] != currentBoard[i]) {
             pos = i;
@@ -622,12 +684,51 @@ int MiniMax::getBoardPositionOfMove(char previousBoard[AMOUNT_POSITIONS], char c
     return pos;
 }
 
-int MiniMax::miniMaxShortVersion(char _board[AMOUNT_POSITIONS], int depth, bool isComputerTurn) {
-    if (deepEnough(_board, depth)) {
+MinimaxResult& MiniMax::miniMaxShortVersion(char _board[], int depth, bool isComputerTurn) {
 
+    int numPossibleMoves = amountOfPossibleMoves(_board);
+
+    if (deepEnough(_board, depth) || numPossibleMoves == 0) {
+        MinimaxResult* mmResult = new MinimaxResult;
+        mmResult->value = evaluate(_board, isComputerTurn);
+        //mmResult->board = null;
+        qDebug() << "depth: " << 3-depth << " - val: " << mmResult->value << " - computer: " << isComputerTurn << " - pos: " << -1;
+        return *mmResult;
     }
-    // TODO
-    return 0;
+
+    MinimaxResult* mmBestResult = new MinimaxResult;
+    mmBestResult->value = evaluate(_board, isComputerTurn);
+    mmBestResult->board = _board;
+
+    char** mvslist = germov(_board, false);
+    for (int i = 0; i < numPossibleMoves; i++) {
+        MinimaxResult& mmCurrentResult = miniMaxShortVersion(mvslist[i], depth-1, !isComputerTurn);
+        if (mmCurrentResult.value > mmBestResult->value) {
+            mmBestResult = &mmCurrentResult;
+        }
+    }
+
+    qDebug() << "depth: " << 3-depth << " - val: " << mmBestResult->value << " - computer: " << isComputerTurn << " - pos: " << getBoardPositionOfMove(_board, mmBestResult->board);
+
+    return *mmBestResult;
+}
+
+int MiniMax::temporary(char _board[], int depth, bool isComputerTurn) {
+    int pos = -1;
+    bool emptyPlaceHolder = false;
+
+    QTime  time = QTime ::currentTime();
+    qsrand((uint)time.msec());
+
+    while(!emptyPlaceHolder) {
+        pos = qrand() % AMOUNT_POSITIONS;
+        qDebug() << "pos: " << pos;
+        if (board[pos] == 0)
+            emptyPlaceHolder = true;
+        else
+            emptyPlaceHolder = false;
+    }
+    return pos;
 }
 
 // returns best move for the current computer player

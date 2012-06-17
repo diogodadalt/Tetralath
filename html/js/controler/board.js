@@ -14,7 +14,7 @@ var Board = new function () {
             width: 70,
             height: 85
         },
-        placeholder = 1,
+        placeholder = 0,
         previousPlaceholder = null;
 
     function hexagonMouseOver() {

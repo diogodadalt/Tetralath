@@ -59,6 +59,7 @@ MainWin::MainWin(QWidget * parent) : QWebView(parent)
 
     QUrl startURL = QUrl("html/view/index.html");
     this->settings()->setAttribute(QWebSettings::DeveloperExtrasEnabled, true);
+    this->setMinimumHeight(700);
 
     // Load web content now!
     setUrl(startURL);

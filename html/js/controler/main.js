@@ -32,10 +32,12 @@ var Tetralath = new function() {
         gameOptions = null,
         humanPlayer = null,
         computerPlayer = null,
-        computerTurn = false;
+        computerTurn = false,
+        humanName = "";
 
     function startGame(e, data) {
         gameOptions = data;
+        humanName = gameOptions.name;
         humanPlayer = {
             color: gameOptions.color,
             willStart: (gameOptions.startingPlayer == 1) ? true : false
@@ -58,12 +60,36 @@ var Tetralath = new function() {
         }
     }
 
+    function somebodyWon(isComputer) {
+        var winner;
+        if (isComputer)
+            winner = "computerwon.html";
+        else
+            winner = "humanwon.html";
+
+        $.fancybox.open({
+            autoSize: true,
+            modal: true,
+            minHeight: 260,
+            minWidth: 400,
+            scrolling: 'no',
+            href : winner,
+            type : 'ajax',
+            padding : 5,
+            afterShow: function() {
+                if (!isComputer)
+                    $(".winner-message").html(humanName + " ganhou!");;
+            }
+        });
+    }
+
     return self = {
         init: function() {
             Board.draw();
             $(Board).bind("placeholderselected", placeHolderSelected);
             $(GameOptions).bind("startgame", startGame);
             Minimax.computerPlayed.connect(self, self.cpuMove);
+            Minimax.somebodyWon.connect(self, somebodyWon);
         },
         cpuMove: function(pos) {
             Board.drawCpuPiece(pos, computerPlayer.color);
